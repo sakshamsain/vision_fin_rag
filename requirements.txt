@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+qdrant-client
+pydantic
+python-multipart
+pdf2image
+pymupdf
+Pillow
+networkx
+requests
+streamlit
+torch
+transformers
+sentencepiece
+protobuf
