@@ -1,5 +1,5 @@
 import requests
-from .config import LLM_API_URL, LLM_MODEL_NAME
+from .config import LLM_API_URL, LLM_MODEL_NAME, USE_EXTERNAL_LLM
 from .models import RetrievedPage, GraphFact
 
 def build_prompt(question: str, pages: list[RetrievedPage], facts: list[GraphFact]) -> str:
@@ -27,7 +27,21 @@ def build_prompt(question: str, pages: list[RetrievedPage], facts: list[GraphFac
     lines.append("Now provide a concise answer.")
     return "\n".join(lines)
 
+def _offline_response(prompt: str) -> str:
+    # Keep it deterministic and short to avoid surprises in UI
+    preview = prompt.splitlines()
+    preview = [line for line in preview if line.strip()]
+    summary = "; ".join(preview[:3])
+    if len(summary) > 300:
+        summary = summary[:300] + "..."
+    return f"[offline stub] {summary or 'No prompt content'}"
+
+
 def call_llm(prompt: str) -> str:
+    # If external LLM is disabled, use local stub
+    if not USE_EXTERNAL_LLM:
+        return _offline_response(prompt)
+
     # Example: Ollama-style REST call; change as per your LLM
     try:
         resp = requests.post(
@@ -39,4 +53,5 @@ def call_llm(prompt: str) -> str:
         data = resp.json()
         return data.get("response", "").strip()
     except Exception as e:
-        return f"LLM error: {e}"
+        # Fallback to offline stub but note the error for visibility
+        return f"{_offline_response(prompt)} (LLM error: {e})"

@@ -2,11 +2,11 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from pathlib import Path
 import uuid
 from .config import DATA_RAW_DIR
-from .models import IndexPDFRequest, QueryRequest, AnswerResponse, PageMetadata
+from .models import IndexPDFRequest, QueryRequest, QuestionRequest, AnswerResponse, PageMetadata
 from .pdf_utils import pdf_to_images
 from .embeddings import index_pages
 from .retrieval import answer_question
-
+from .workflow import run_rag
 router = APIRouter()
 
 @router.post("/upload_pdf")
@@ -35,8 +35,9 @@ def index_pdf(req: IndexPDFRequest):
     index_pages(req.company, req.year, pages_meta)
     return {"status": "ok", "pages_indexed": len(pages_meta)}
 
-@router.post("/ask", response_model=AnswerResponse)
-def ask_question(req: QueryRequest):
-    if not req.question:
-        raise HTTPException(status_code=400, detail="Question is required")
-    return answer_question(req)
+
+@router.post("/ask")
+def ask(req: QuestionRequest):
+    answer = run_rag(req.question)
+    return {"answer": answer}
+
